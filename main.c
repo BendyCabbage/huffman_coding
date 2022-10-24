@@ -17,8 +17,6 @@ where instead of each node having two children, they have radix children
 #define DUMMY_SYMBOL '~'
 #define MAX_RADIX 10
 #define MAX_CODE_LENGTH 100
-#define ASCII_ZERO 48
-
 
 typedef struct node *Node;
 typedef struct list *List;
@@ -43,12 +41,10 @@ int value(Node n);
 List create_list(Node node);
 List list_append(List head, Node new_node);
 List list_insert(List head, Node new_node);
+int list_sum(List head);
 
 List get_last_n(List head, int total_nodes, int total_nodes_to_get);
 List remove_last_n(List head, int total_nodes, int total_nodes_to_remove);
-
-int list_sum(List head);
-void print_list(List head);
 
 //Huffman encoding
 Node construct_huffman_tree(int radix, int num_symbols, List leaf_nodes);
@@ -133,8 +129,6 @@ void do_find_codes(Node node, char *code_string) {
         }
     }
 }
-
-//////////////////////// Helper Functions ////////////////////////
 
 int compare_nodes(const void *s1, const void *s2) {
     return ((Node)s1)->value - ((Node)s2)->value;
@@ -248,14 +242,4 @@ int list_sum(List head) {
         current = current->next;
     }
     return sum;
-}
-
-//Prints out all values in the list
-void print_list(List head) {
-    List current = head;
-    while (current != NULL) {
-        printf("%d ", value(current->node));
-        current = current->next;
-    }
-    printf("\n");
 }
