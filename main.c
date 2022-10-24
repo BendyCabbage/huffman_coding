@@ -1,6 +1,23 @@
+/*
+Made by Josh Caithness (https://github.com/BendyCabbage)
+24/10/2022
+Made for MATH3411 (Information, Codes and Ciphers)
+
+For more information on the implementation of the Huffman Algorithm:
+https://www.geeksforgeeks.org/huffman-coding-greedy-algo-3/
+This is a more generalised version of the one shown, 
+where instead of each node having two children, they have radix children
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
+
+#define PARENT_SYMBOL '*'
+#define MAX_RADIX 10
+#define MAX_CODE_LENGTH 100
+#define ASCII_ZERO 48
 
 typedef struct node *Node;
 typedef struct list *List;
@@ -34,12 +51,14 @@ void print_list(List head);
 
 //Huffman encoding
 Node construct_huffman_tree(int radix, int num_symbols, List leaf_nodes);
+void find_codes(Node root);
+void do_find_codes(Node node, char *code_string);
 
 int main (void) {
     int radix;
     printf("Enter radix: ");
     scanf("%d", &radix);
-    assert(radix > 1);
+    assert(radix > 1 && radix <= MAX_RADIX);
 
     printf("How many symbols are there: ");
     int num_symbols;
@@ -57,11 +76,12 @@ int main (void) {
         leaf_nodes = list_insert(leaf_nodes, create_node(probability, symbol, NULL));
     }
     Node root = construct_huffman_tree(radix, num_symbols, leaf_nodes);
+    find_codes(root);
+
     return 0;
 }
 
 Node construct_huffman_tree(int radix, int num_symbols, List leaf_nodes) {
-    print_list(leaf_nodes);
     int average_word_length = 0;
 
     int num_remaining_symbols = num_symbols;
@@ -73,12 +93,37 @@ Node construct_huffman_tree(int radix, int num_symbols, List leaf_nodes) {
         int child_sum = list_sum(children);
         average_word_length += child_sum;
 
-        Node parent = create_node(child_sum, '*', children);
+        Node parent = create_node(child_sum, PARENT_SYMBOL, children);
         leaf_nodes = list_insert(leaf_nodes, parent);
         num_remaining_symbols++;
     }
     printf("Average word length: %d\n", average_word_length);
     return leaf_nodes->node;
+}
+
+void find_codes(Node root) {
+    char code_string[MAX_CODE_LENGTH];
+    do_find_codes(root, code_string);
+}
+
+void do_find_codes(Node node, char *code_string) {
+    if (node == NULL) return;
+
+    if (node->symbol != PARENT_SYMBOL) {
+        printf("%c: %s\n", node->symbol, code_string);
+    } else {
+        List current = node->children;
+        int symbol = 0;
+        while (current != NULL) {
+            //Appending symbol to the end of code_string
+            char new_code_string[MAX_CODE_LENGTH];
+            sprintf(new_code_string, "%s%d", code_string, symbol);
+            do_find_codes(current->node, new_code_string);
+
+            symbol++;
+            current = current->next;
+        }
+    }
 }
 
 //////////////////////// Helper Functions ////////////////////////
@@ -87,8 +132,9 @@ int compare_nodes(const void *s1, const void *s2) {
     return ((Node)s1)->value - ((Node)s2)->value;
 }
 
-//////////////////////// Node ADT ////////////////////////
+//////////////////////// Node Functions ////////////////////////
 
+//Creates a new node
 Node create_node(int value, char symbol, List children) {
     Node new_node = malloc(sizeof(*new_node));
     
@@ -105,7 +151,7 @@ int value(Node n) {
     return n->value;
 }
 
-/////////////////////////// List ADT //////////////////////////
+/////////////////////////// List Functions //////////////////////////
 
 //Creates a new list
 List create_list(Node node) {
