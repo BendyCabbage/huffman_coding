@@ -1,6 +1,5 @@
 /*
 Made by Josh Caithness (https://github.com/BendyCabbage)
-24/10/2022
 Made for MATH3411 (Information, Codes and Ciphers)
 
 For more information on the implementation of the Huffman Algorithm:
@@ -15,9 +14,11 @@ where instead of each node having two children, they have radix children
 #include <string.h>
 
 #define PARENT_SYMBOL '*'
+#define DUMMY_SYMBOL '~'
 #define MAX_RADIX 10
 #define MAX_CODE_LENGTH 100
 #define ASCII_ZERO 48
+
 
 typedef struct node *Node;
 typedef struct list *List;
@@ -75,6 +76,13 @@ int main (void) {
         scanf("%d", &probability);
         leaf_nodes = list_insert(leaf_nodes, create_node(probability, symbol, NULL));
     }
+
+    //Inserting dummy symbols
+    int num_required_dummies = (1 - num_symbols) % (radix - 1);
+    for (int i = 0; i < num_required_dummies; i++) {
+        leaf_nodes = list_insert(leaf_nodes, create_node(0, DUMMY_SYMBOL, NULL));
+    }
+
     Node root = construct_huffman_tree(radix, num_symbols, leaf_nodes);
     find_codes(root);
 
