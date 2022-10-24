@@ -1,7 +1,7 @@
 import math
 
 def main():
-    probabilities = input("Enter the symbols probabilities separated by a comma (,): ").split(",")
+    probabilities = input("Enter the symbol's probabilities separated by a comma (,): ").split(",")
     probabilities = [float(i) for i in probabilities]
     probabilities.sort(reverse = True)
     radix = int(input("Enter the radix: "))
