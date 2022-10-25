@@ -1,6 +1,7 @@
 /*
 Made by Josh Caithness (https://github.com/BendyCabbage)
 Made for MATH3411 (Information, Codes and Ciphers)
+Only use for educational purposes
 
 For more information on the implementation of the Huffman Algorithm:
 https://www.geeksforgeeks.org/huffman-coding-greedy-algo-3/
@@ -18,6 +19,9 @@ where instead of each node having two children, they have radix children
 #define MAX_RADIX 10
 #define MAX_CODE_LENGTH 100
 
+#define TRUE 1
+#define FALSE 0
+
 typedef struct node *Node;
 typedef struct list *List;
 
@@ -34,20 +38,27 @@ struct node {
 
 //Node functions
 Node create_node(int value, char symbol, List children);
-int compare_nodes(const void *s1, const void *s2);
+int compare_nodes_by_value(Node n1, Node n2);
+
+void free_node(Node node);
 int value(Node n);
 
 //List functions
 List create_list(Node node);
 List list_append(List head, Node new_node);
-List list_insert(List head, Node new_node);
+List list_insert_high(List head, Node new_node, int (*compare)(Node, Node));
+List list_insert_low(List head, Node new_node, int (*compare)(Node, Node));
+
+void free_list(List head, int free_nodes);
 int list_sum(List head);
+void print_list(List head);
 
 List get_last_n(List head, int total_nodes, int total_nodes_to_get);
 List remove_last_n(List head, int total_nodes, int total_nodes_to_remove);
 
 //Huffman encoding
 Node construct_huffman_tree(int radix, int num_symbols, List leaf_nodes);
+List insert_dummy_symbols(int num_required_dummies, List leaf_nodes);
 void find_codes(Node root);
 void do_find_codes(Node node, char *code_string);
 
@@ -70,19 +81,34 @@ int main (void) {
     for (int i = 0; i < num_symbols; i++) {
         scanf(" %c", &symbol);
         scanf("%d", &probability);
-        leaf_nodes = list_insert(leaf_nodes, create_node(probability, symbol, NULL));
+        leaf_nodes = list_insert_low(
+            leaf_nodes, 
+            create_node(probability, symbol, NULL),
+            compare_nodes_by_value
+        );
     }
 
     //Inserting dummy symbols
-    int num_required_dummies = (1 - num_symbols) % (radix - 1);
-    for (int i = 0; i < num_required_dummies; i++) {
-        leaf_nodes = list_insert(leaf_nodes, create_node(0, DUMMY_SYMBOL, NULL));
-    }
+    int num_required_dummies = (num_symbols - 1) % (radix - 1);
+    leaf_nodes = insert_dummy_symbols(num_required_dummies, leaf_nodes);
+    num_symbols += num_required_dummies;
 
     Node root = construct_huffman_tree(radix, num_symbols, leaf_nodes);
     find_codes(root);
+    free_node(root);
 
     return 0;
+}
+
+List insert_dummy_symbols(int num_required_dummies, List leaf_nodes) {
+    for (int i = 0; i < num_required_dummies; i++) {
+        leaf_nodes = list_insert_low(
+            leaf_nodes, 
+            create_node(0, DUMMY_SYMBOL, NULL),
+            compare_nodes_by_value
+        );
+    }
+    return leaf_nodes;
 }
 
 Node construct_huffman_tree(int radix, int num_symbols, List leaf_nodes) {
@@ -98,7 +124,7 @@ Node construct_huffman_tree(int radix, int num_symbols, List leaf_nodes) {
         average_word_length += child_sum;
 
         Node parent = create_node(child_sum, PARENT_SYMBOL, children);
-        leaf_nodes = list_insert(leaf_nodes, parent);
+        leaf_nodes = list_insert_high(leaf_nodes, parent, compare_nodes_by_value);
         num_remaining_symbols++;
     }
     printf("Average word length: %d\n", average_word_length);
@@ -106,7 +132,7 @@ Node construct_huffman_tree(int radix, int num_symbols, List leaf_nodes) {
 }
 
 void find_codes(Node root) {
-    char code_string[MAX_CODE_LENGTH];
+    char code_string[MAX_CODE_LENGTH] = "";
     do_find_codes(root, code_string);
 }
 
@@ -130,8 +156,10 @@ void do_find_codes(Node node, char *code_string) {
     }
 }
 
-int compare_nodes(const void *s1, const void *s2) {
-    return ((Node)s1)->value - ((Node)s2)->value;
+int compare_nodes_by_value(Node n1, Node n2) {
+    if (n2 == NULL) return 1;
+    if (n1 == NULL) return -1;
+    return n1->value - n2->value;
 }
 
 //////////////////////// Node Functions ////////////////////////
@@ -145,6 +173,12 @@ Node create_node(int value, char symbol, List children) {
     new_node->children = children;
 
     return new_node;
+}
+
+void free_node(Node node) {
+    if (node == NULL) return;
+    free_list(node->children, TRUE);
+    free(node);
 }
 
 //Returns the value of a given node
@@ -167,7 +201,6 @@ List create_list(Node node) {
 //Adds a new node to the end of the List
 List list_append(List head, Node new_node) {
     List new_list = create_list(new_node);
-
     if (head == NULL) return new_list;
 
     List current = head;
@@ -179,18 +212,42 @@ List list_append(List head, Node new_node) {
 }
 
 //Inserts a node at the first location that maintains the list being sorted
-List list_insert(List head, Node new_node) {
+List list_insert_high(List head, Node new_node, int (*compare)(Node, Node)) {
     List new_list = create_list(new_node);
 
     if (head == NULL) return new_list;
-    if (compare_nodes(new_list->node, head->node) >= 0) {
+    if (compare(new_list->node, head->node) >= 0) {
         new_list->next = head;
         return new_list;
     }
     List current = head;
     List next = current->next;
     while (current->next != NULL) {
-        if (compare_nodes(new_list->node, next->node) >= 0) {
+        if (compare(new_list->node, next->node) >= 0) {
+            current->next = new_list;
+            new_list->next = next;
+            return head;
+        }
+        current = next;
+        next = next->next;
+    }
+    current->next = new_list;
+    return head;
+}
+
+//Inserts a node at the last location that maintains the list being sorted
+List list_insert_low(List head, Node new_node, int (*compare)(Node, Node)) {
+    List new_list = create_list(new_node);
+
+    if (head == NULL) return new_list;
+    if (compare(new_list->node, head->node) > 0) {
+        new_list->next = head;
+        return new_list;
+    }
+    List current = head;
+    List next = current->next;
+    while (current->next != NULL) {
+        if (compare(new_list->node, next->node) > 0) {
             current->next = new_list;
             new_list->next = next;
             return head;
@@ -214,7 +271,6 @@ List get_last_n(List head, int total_nodes, int total_nodes_to_get) {
         current_node_number--;
     }
     if (current == NULL) return head;
-
     return current;
 }
 
@@ -231,6 +287,20 @@ List remove_last_n(List head, int total_nodes, int total_nodes_to_remove) {
     if (current == NULL) return NULL;
     current->next = NULL;
     return head;
+}
+
+void free_list(List head, int free_nodes) {
+    if (head == NULL) return;
+
+    List current = head;
+    while (current != NULL) {
+        List temp = current->next;
+        if (free_nodes == TRUE) {
+            free_node(current->node);
+        }
+        free(current);
+        current = temp;
+    }
 }
 
 //Finds the sum of all nodes in the list
