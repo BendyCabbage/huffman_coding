@@ -7,6 +7,9 @@ For more information on the implementation of the Huffman Algorithm:
 https://www.geeksforgeeks.org/huffman-coding-greedy-algo-3/
 This is a more generalised version of the one shown, 
 where instead of each node having two children, they have radix children
+
+If anyone finds a more intelligent method (aka formula) for determining the number
+of dummy symbols needed please let me know
 */
 
 #include <stdio.h>
@@ -89,7 +92,14 @@ int main (void) {
     }
 
     //Inserting dummy symbols
-    int num_required_dummies = (num_symbols - 1) % (radix - 1);
+    int num_required_dummies = 0;
+    int current_remainder = (num_symbols + num_required_dummies) % (radix - 1);
+
+    while (current_remainder != 1) {
+        num_required_dummies++;
+        current_remainder = (num_symbols + num_required_dummies) % (radix - 1);
+    }
+
     leaf_nodes = insert_dummy_symbols(num_required_dummies, leaf_nodes);
     num_symbols += num_required_dummies;
 
