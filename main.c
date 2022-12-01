@@ -65,31 +65,47 @@ List insert_dummy_symbols(int num_required_dummies, List leaf_nodes);
 void find_codes(Node root);
 void do_find_codes(Node node, char *code_string);
 
-int main (void) {
+int main (int argc, char *argv[]) {
     int radix;
-    printf("Enter radix: ");
-    scanf("%d", &radix);
-    assert(radix > 1 && radix <= MAX_RADIX);
-
-    printf("How many symbols are there: ");
     int num_symbols;
-    scanf("%d", &num_symbols);
-    assert(num_symbols > 0);
-
     List leaf_nodes = NULL;
-    printf("Enter symbols and probabilities (s1 p1 s2 p2...): ");
 
-    int probability;
-    char symbol;
-    for (int i = 0; i < num_symbols; i++) {
-        scanf(" %c", &symbol);
-        scanf("%d", &probability);
-        leaf_nodes = list_insert_low(
-            leaf_nodes, 
-            create_node(probability, symbol, NULL),
-            compare_nodes_by_value
-        );
+    if (argc > 2) {
+        radix = atoi(argv[1]);
+        num_symbols = argc - 2;
+        for (int i = 2; i < argc; i++) {
+            char symbol = i + '1' - 2;
+            int probability = atoi(argv[i]);
+            leaf_nodes = list_insert_low(
+                leaf_nodes,
+                create_node(probability, symbol, NULL),
+                compare_nodes_by_value
+            );
+        }
+    } else {
+        printf("Enter radix: ");
+        scanf("%d", &radix);
+        assert(radix > 1 && radix <= MAX_RADIX);
+
+        printf("How many symbols are there: ");
+        scanf("%d", &num_symbols);
+        assert(num_symbols > 0);
+
+        printf("Enter symbols and probabilities (s1 p1 s2 p2...): ");
+
+        int probability;
+        char symbol;
+        for (int i = 0; i < num_symbols; i++) {
+            scanf(" %c", &symbol);
+            scanf("%d", &probability);
+            leaf_nodes = list_insert_low(
+                leaf_nodes, 
+                create_node(probability, symbol, NULL),
+                compare_nodes_by_value
+            );
+        }
     }
+
     //Inserting dummy symbols
     int num_required_dummies = 0;
     int current_remainder = (num_symbols + num_required_dummies) % (radix - 1);
