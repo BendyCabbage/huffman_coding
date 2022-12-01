@@ -90,19 +90,17 @@ int main (void) {
             compare_nodes_by_value
         );
     }
-
     //Inserting dummy symbols
     int num_required_dummies = 0;
     int current_remainder = (num_symbols + num_required_dummies) % (radix - 1);
 
-    while (current_remainder != 1) {
+    while (radix != 2 && current_remainder != 1) {
         num_required_dummies++;
         current_remainder = (num_symbols + num_required_dummies) % (radix - 1);
     }
 
     leaf_nodes = insert_dummy_symbols(num_required_dummies, leaf_nodes);
     num_symbols += num_required_dummies;
-
     Node root = construct_huffman_tree(radix, num_symbols, leaf_nodes);
     find_codes(root);
     free_node(root);
